@@ -1,0 +1,2151 @@
+{
+  "datasets": [
+    {
+      "name": "ac7847b3",
+      "displayName": "Humanitarian Cluster Needs And Targets 2026 Dataset",
+      "queryLines": [
+        "SELECT \n",
+        "`Country ISO3`\n",
+        ",iso3.name AS Country\n",
+        ",CASE\n",
+        "WHEN Cluster LIKE 'ALL' THEN 'Total'\n",
+        "WHEN Cluster LIKE 'EDU' THEN 'Education'\n",
+        "WHEN Cluster LIKE 'FSC' THEN 'Food, Security and Agriculture'\n",
+        "WHEN Cluster LIKE 'HEA' THEN 'Health'\n",
+        "WHEN Cluster LIKE 'MPC' THEN 'Multipurpose Cash'\n",
+        "WHEN Cluster LIKE 'NUT' THEN 'Nutrition'\n",
+        "WHEN Cluster LIKE 'PRO' THEN 'Protection (overall)'\n",
+        "WHEN Cluster LIKE 'SHL' THEN 'Emergency, Shelter and NFI'\n",
+        "WHEN Cluster LIKE 'WSH' THEN 'Water, Sanitation and Hygiene'\n",
+        "WHEN Cluster LIKE 'CCM' THEN 'Camp Coordination and Camp Management'\n",
+        "WHEN Cluster LIKE 'MS' THEN 'Refugee Response'\n",
+        "WHEN Cluster LIKE 'PRO-CPN' THEN 'Child Protection'\n",
+        "WHEN Cluster LIKE 'PRO-GBV' THEN 'Gender-Based Violence (GBV)'\n",
+        "WHEN Cluster LIKE 'PRO-MIN' THEN 'Anti-mine Struggle'\n",
+        "WHEN Cluster LIKE 'PRO-HLP' THEN 'Housing, Land and Property'\n",
+        "END AS Description\n",
+        ",Cluster\n",
+        ",Population\n",
+        ",`In Need`\n",
+        ",Targeted\n",
+        ",Targeted/`In Need` AS Coverage\n",
+        " FROM `workspace`.`default`.`hpc_hno_2026` AS hpc\n",
+        " LEFT JOIN `workspace`.`default`.`CountryISO3Code` AS iso3 ON hpc.`Country ISO3` = iso3.`alpha-3`\n",
+        " WHERE `In Need` IS NOT NULL\n",
+        " ORDER BY Coverage"
+      ]
+    },
+    {
+      "name": "99adca61",
+      "displayName": "Ranking Dataset (Coverage)",
+      "queryLines": [
+        "WITH CSE1 AS (\n",
+        "    SELECT \n",
+        "        hpc.`Country ISO3`,\n",
+        "        iso3.name AS Country,\n",
+        "        hpc.Cluster,\n",
+        "        hpc.Population,\n",
+        "        hpc.`In Need`,\n",
+        "        hpc.Targeted,\n",
+        "        hpc.Targeted / hpc.`In Need` AS Coverage\n",
+        "    FROM `workspace`.`default`.`hpc_hno_2026` AS hpc\n",
+        "    LEFT JOIN `workspace`.`default`.`CountryISO3Code` AS iso3\n",
+        "        ON hpc.`Country ISO3` = iso3.`alpha-3`\n",
+        "    WHERE hpc.`In Need` IS NOT NULL\n",
+        "    AND (Description NOT LIKE 'Protection générale' AND Description NOT LIKE 'Protection Générale') \n",
+        "),\n",
+        "CSE2 AS (\n",
+        "    SELECT\n",
+        "        *,\n",
+        "        ROW_NUMBER() OVER (PARTITION BY Cluster ORDER BY Coverage, Country ASC) AS Rank,\n",
+        "        COUNT(*) OVER (PARTITION BY Cluster) AS Total\n",
+        "    FROM CSE1\n",
+        ")\n",
+        ",CSE3 AS (\n",
+        "SELECT\n",
+        "    `Country ISO3`,\n",
+        "    Country,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'ALL' THEN Coverage END) AS ALL_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'ALL' THEN Rank END)     AS ALL_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'ALL' THEN Total END)    AS ALL_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'EDU' THEN Coverage END) AS EDU_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'EDU' THEN Rank END)     AS EDU_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'EDU' THEN Total END)    AS EDU_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'FSC' THEN Coverage END) AS FSC_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'FSC' THEN Rank END)     AS FSC_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'FSC' THEN Total END)    AS FSC_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'HEA' THEN Coverage END) AS HEA_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'HEA' THEN Rank END)     AS HEA_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'HEA' THEN Total END)    AS HEA_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'MPC' THEN Coverage END) AS MPC_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'MPC' THEN Rank END)     AS MPC_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'MPC' THEN Total END)    AS MPC_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'NUT' THEN Coverage END) AS NUT_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'NUT' THEN Rank END)     AS NUT_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'NUT' THEN Total END)    AS NUT_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'PRO' THEN Coverage END) AS PRO_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO' THEN Rank END)     AS PRO_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO' THEN Total END)    AS PRO_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'SHL' THEN Coverage END) AS SHL_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'SHL' THEN Rank END)     AS SHL_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'SHL' THEN Total END)    AS SHL_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'WSH' THEN Coverage END) AS WSH_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'WSH' THEN Rank END)     AS WSH_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'WSH' THEN Total END)    AS WSH_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'CCM' THEN Coverage END) AS CCM_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'CCM' THEN Rank END)     AS CCM_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'CCM' THEN Total END)    AS CCM_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'MS' THEN Coverage END) AS MS_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'MS' THEN Rank END)     AS MS_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'MS' THEN Total END)    AS MS_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-CPN' THEN Coverage END) AS PRO_CPN_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-CPN' THEN Rank END)     AS PRO_CPN_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-CPN' THEN Total END)    AS PRO_CPN_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-GBV' THEN Coverage END) AS PRO_GBV_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-GBV' THEN Rank END)     AS PRO_GBV_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-GBV' THEN Total END)    AS PRO_GBV_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-MIN' THEN Coverage END) AS PRO_MIN_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-MIN' THEN Rank END)     AS PRO_MIN_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-MIN' THEN Total END)    AS PRO_MIN_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-HLP' THEN Coverage END) AS PRO_HLP_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-HLP' THEN Rank END)     AS PRO_HLP_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-HLP' THEN Total END)    AS PRO_HLP_Total\n",
+        "\n",
+        "FROM CSE2\n",
+        "GROUP BY `Country ISO3`, Country\n",
+        "ORDER BY Country)\n",
+        "SELECT \n",
+        "Country\n",
+        ",CASE WHEN ALL_Coverage IS NOT NULL THEN ALL_Coverage END AS `Total Coverage`\n",
+        ",CASE WHEN ALL_Rank IS NOT NULL THEN CONCAT(CAST(ALL_Rank AS STRING),\"/\",CAST(ALL_Total AS STRING)) ELSE '' END AS `Total Coverage Rank`\n",
+        "\n",
+        ",CASE WHEN EDU_Coverage IS NOT NULL THEN EDU_Coverage END AS `Education`\n",
+        ",CASE WHEN EDU_Rank IS NOT NULL THEN CONCAT(CAST(EDU_Rank AS STRING),\"/\",CAST(EDU_Total AS STRING)) ELSE '' END AS `Education Rank`\n",
+        "\n",
+        ",CASE WHEN FSC_Coverage IS NOT NULL THEN FSC_Coverage END AS `Food, Security and Agriculture`\n",
+        ",CASE WHEN FSC_Rank IS NOT NULL THEN CONCAT(CAST(FSC_Rank AS STRING),\"/\",CAST(FSC_Total AS STRING)) ELSE '' END AS `Food, Security and Agriculture Rank`\n",
+        "\n",
+        ",CASE WHEN HEA_Coverage IS NOT NULL THEN HEA_Coverage END AS `Health`\n",
+        ",CASE WHEN HEA_Rank IS NOT NULL THEN CONCAT(CAST(HEA_Rank AS STRING),\"/\",CAST(HEA_Total AS STRING)) ELSE '' END AS `Health Rank`\n",
+        "\n",
+        ",CASE WHEN MPC_Coverage IS NOT NULL THEN MPC_Coverage END AS `Multipurpose Cash`\n",
+        ",CASE WHEN MPC_Rank IS NOT NULL THEN CONCAT(CAST(MPC_Rank AS STRING),\"/\",CAST(MPC_Total AS STRING)) ELSE '' END AS `Multipurpose Cash Rank`\n",
+        "\n",
+        ",CASE WHEN NUT_Coverage IS NOT NULL THEN NUT_Coverage END AS `Nutrition`\n",
+        ",CASE WHEN NUT_Rank IS NOT NULL THEN CONCAT(CAST(NUT_Rank AS STRING),\"/\",CAST(NUT_Total AS STRING)) ELSE '' END AS `Nutrition Rank`\n",
+        "\n",
+        ",CASE WHEN PRO_Coverage IS NOT NULL THEN PRO_Coverage END AS `Protection (overall)`\n",
+        ",CASE WHEN PRO_Rank IS NOT NULL THEN CONCAT(CAST(PRO_Rank AS STRING),\"/\",CAST(PRO_Total AS STRING)) ELSE '' END AS `Protection (overall) Rank`\n",
+        "\n",
+        ",CASE WHEN SHL_Coverage IS NOT NULL THEN SHL_Coverage END AS `Emergency, Shelter and NFI`\n",
+        ",CASE WHEN SHL_Rank IS NOT NULL THEN CONCAT(CAST(SHL_Rank AS STRING),\"/\",CAST(SHL_Total AS STRING)) ELSE '' END AS `Emergency, Shelter and NFI Rank`\n",
+        "\n",
+        ",CASE WHEN WSH_Coverage IS NOT NULL THEN WSH_Coverage END AS `Water, Sanitation and Hygiene`\n",
+        ",CASE WHEN WSH_Rank IS NOT NULL THEN CONCAT(CAST(WSH_Rank AS STRING),\"/\",CAST(WSH_Total AS STRING)) ELSE '' END AS `Water, Sanitation and Hygiene Rank`\n",
+        "\n",
+        ",CASE WHEN CCM_Coverage IS NOT NULL THEN CCM_Coverage END AS `Camp Coordination and Camp Management`\n",
+        ",CASE WHEN CCM_Rank IS NOT NULL THEN CONCAT(CAST(CCM_Rank AS STRING),\"/\",CAST(CCM_Total AS STRING)) ELSE '' END AS `Camp Coordination and Camp Management Rank`\n",
+        "\n",
+        ",CASE WHEN MS_Coverage IS NOT NULL THEN MS_Coverage END AS `Refugee Response`\n",
+        ",CASE WHEN MS_Rank IS NOT NULL THEN CONCAT(CAST(MS_Rank AS STRING),\"/\",CAST(MS_Total AS STRING)) ELSE '' END AS `Refugee Response Rank`\n",
+        "\n",
+        ",CASE WHEN PRO_CPN_Coverage IS NOT NULL THEN PRO_CPN_Coverage END AS `Child Protection`\n",
+        ",CASE WHEN PRO_CPN_Rank IS NOT NULL THEN CONCAT(CAST(PRO_CPN_Rank AS STRING),\"/\",CAST(PRO_CPN_Total AS STRING)) ELSE '' END AS `Child Protection Rank`\n",
+        "\n",
+        ",CASE WHEN PRO_GBV_Coverage IS NOT NULL THEN PRO_GBV_Coverage END AS `Gender-Based Violence (GBV)`\n",
+        ",CASE WHEN PRO_GBV_Rank IS NOT NULL THEN CONCAT(CAST(PRO_GBV_Rank AS STRING),\"/\",CAST(PRO_GBV_Total AS STRING)) ELSE '' END AS `Gender-Based Violence (GBV) Rank`\n",
+        "\n",
+        ",CASE WHEN PRO_MIN_Coverage IS NOT NULL THEN PRO_MIN_Coverage END AS `Anti-mine Struggle`\n",
+        ",CASE WHEN PRO_MIN_Rank IS NOT NULL THEN CONCAT(CAST(PRO_MIN_Rank AS STRING),\"/\",CAST(PRO_MIN_Total AS STRING)) ELSE '' END AS `Anti-mine Struggle Rank`\n",
+        "\n",
+        ",CASE WHEN PRO_HLP_Coverage IS NOT NULL THEN PRO_HLP_Coverage END AS `Housing, Land and Property`\n",
+        ",CASE WHEN PRO_HLP_Rank IS NOT NULL THEN CONCAT(CAST(PRO_HLP_Rank AS STRING),\"/\",CAST(PRO_HLP_Total AS STRING)) ELSE '' END AS `Housing, Land and Property Rank`-- ,CASE WHEN ALL_Rank IS NOT NULL AND ALL_Total <> 0 THEN CAST(ALL_Rank AS DOUBLE) / CAST(ALL_Total AS DOUBLE) END AS `Total Coverage`\n",
+        "-- ,CASE WHEN EDU_Rank IS NOT NULL AND EDU_Total <> 0 THEN CAST(EDU_Rank AS DOUBLE) / CAST(EDU_Total AS DOUBLE) END AS Education\n",
+        "-- ,CASE WHEN FSC_Rank IS NOT NULL AND FSC_Total <> 0 THEN CAST(FSC_Rank AS DOUBLE) / CAST(FSC_Total AS DOUBLE) END AS `Food, Security and Agriculture`\n",
+        "-- ,CASE WHEN HEA_Rank IS NOT NULL AND HEA_Total <> 0 THEN CAST(HEA_Rank AS DOUBLE) / CAST(HEA_Total AS DOUBLE) END AS Health\n",
+        "-- ,CASE WHEN MPC_Rank IS NOT NULL AND MPC_Total <> 0 THEN CAST(MPC_Rank AS DOUBLE) / CAST(MPC_Total AS DOUBLE) END AS `Multipurpose Cash`\n",
+        "-- ,CASE WHEN NUT_Rank IS NOT NULL AND NUT_Total <> 0 THEN CAST(NUT_Rank AS DOUBLE) / CAST(NUT_Total AS DOUBLE) END AS Nutrition\n",
+        "-- ,CASE WHEN PRO_Rank IS NOT NULL AND PRO_Total <> 0 THEN CAST(PRO_Rank AS DOUBLE) / CAST(PRO_Total AS DOUBLE) END AS `Protection (overall)`\n",
+        "-- ,CASE WHEN SHL_Rank IS NOT NULL AND SHL_Total <> 0 THEN CAST(SHL_Rank AS DOUBLE) / CAST(SHL_Total AS DOUBLE) END AS `Emergency, Shelter and NFI`\n",
+        "-- ,CASE WHEN WSH_Rank IS NOT NULL AND WSH_Total <> 0 THEN CAST(WSH_Rank AS DOUBLE) / CAST(WSH_Total AS DOUBLE) END AS `Water, Sanitation and Hygiene`\n",
+        "-- ,CASE WHEN CCM_Rank IS NOT NULL AND CCM_Total <> 0 THEN CAST(CCM_Rank AS DOUBLE) / CAST(CCM_Total AS DOUBLE) END AS `Camp Coordination and Camp Management`\n",
+        "-- ,CASE WHEN MS_Rank IS NOT NULL AND MS_Total <> 0 THEN CAST(MS_Rank AS DOUBLE) / CAST(MS_Total AS DOUBLE) END AS `Refugee Response`\n",
+        "-- ,CASE WHEN PRO_CPN_Rank IS NOT NULL AND PRO_CPN_Total <> 0 THEN CAST(PRO_CPN_Rank AS DOUBLE) / CAST(PRO_CPN_Total AS DOUBLE) END AS `Child Protection`\n",
+        "-- ,CASE WHEN PRO_GBV_Rank IS NOT NULL AND PRO_GBV_Total <> 0 THEN CAST(PRO_GBV_Rank AS DOUBLE) / CAST(PRO_GBV_Total AS DOUBLE) END AS `Gender-Based Violence (GBV)`\n",
+        "-- ,CASE WHEN PRO_MIN_Rank IS NOT NULL AND PRO_MIN_Total <> 0 THEN CAST(PRO_MIN_Rank AS DOUBLE) / CAST(PRO_MIN_Total AS DOUBLE) END AS `Anti-mine Struggle`\n",
+        "-- ,CASE WHEN PRO_HLP_Rank IS NOT NULL AND PRO_HLP_Total <> 0 THEN CAST(PRO_HLP_Rank AS DOUBLE) / CAST(PRO_HLP_Total AS DOUBLE) END AS `Housing, Land and Property`\n",
+        "FROM CSE3\n",
+        "ORDER BY ALL_Rank ASC\n",
+        "\n"
+      ]
+    },
+    {
+      "name": "31061818",
+      "displayName": "Ranking Dataset (In Need - Targeted)",
+      "queryLines": [
+        "WITH CSE1 AS (\n",
+        "    SELECT \n",
+        "        hpc.`Country ISO3`,\n",
+        "        iso3.name AS Country,\n",
+        "        hpc.Cluster,\n",
+        "        hpc.Population,\n",
+        "        hpc.`In Need`,\n",
+        "        hpc.Targeted,\n",
+        "        `In Need`-Targeted AS Coverage\n",
+        "    FROM `workspace`.`default`.`hpc_hno_2026` AS hpc\n",
+        "    LEFT JOIN `workspace`.`default`.`CountryISO3Code` AS iso3\n",
+        "        ON hpc.`Country ISO3` = iso3.`alpha-3`\n",
+        "    WHERE hpc.`In Need` IS NOT NULL\n",
+        "    AND (Description NOT LIKE 'Protection générale' AND Description NOT LIKE 'Protection Générale') \n",
+        "),\n",
+        "CSE2 AS (\n",
+        "    SELECT\n",
+        "        *,\n",
+        "        ROW_NUMBER() OVER (PARTITION BY Cluster ORDER BY Coverage DESC) AS Rank,\n",
+        "        COUNT(*) OVER (PARTITION BY Cluster) AS Total\n",
+        "    FROM CSE1\n",
+        ")\n",
+        ",CSE3 AS (\n",
+        "SELECT\n",
+        "    `Country ISO3`,\n",
+        "    Country,\n",
+        "    MAX(CASE WHEN Cluster = 'ALL' THEN Coverage END) AS ALL_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'ALL' THEN Rank END)     AS ALL_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'ALL' THEN Total END)    AS ALL_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'EDU' THEN Coverage END) AS EDU_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'EDU' THEN Rank END)     AS EDU_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'EDU' THEN Total END)    AS EDU_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'FSC' THEN Coverage END) AS FSC_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'FSC' THEN Rank END)     AS FSC_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'FSC' THEN Total END)    AS FSC_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'HEA' THEN Coverage END) AS HEA_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'HEA' THEN Rank END)     AS HEA_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'HEA' THEN Total END)    AS HEA_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'MPC' THEN Coverage END) AS MPC_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'MPC' THEN Rank END)     AS MPC_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'MPC' THEN Total END)    AS MPC_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'NUT' THEN Coverage END) AS NUT_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'NUT' THEN Rank END)     AS NUT_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'NUT' THEN Total END)    AS NUT_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'PRO' THEN Coverage END) AS PRO_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO' THEN Rank END)     AS PRO_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO' THEN Total END)    AS PRO_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'SHL' THEN Coverage END) AS SHL_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'SHL' THEN Rank END)     AS SHL_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'SHL' THEN Total END)    AS SHL_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'WSH' THEN Coverage END) AS WSH_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'WSH' THEN Rank END)     AS WSH_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'WSH' THEN Total END)    AS WSH_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'CCM' THEN Coverage END) AS CCM_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'CCM' THEN Rank END)     AS CCM_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'CCM' THEN Total END)    AS CCM_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'MS' THEN Coverage END) AS MS_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'MS' THEN Rank END)     AS MS_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'MS' THEN Total END)    AS MS_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-CPN' THEN Coverage END) AS PRO_CPN_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-CPN' THEN Rank END)     AS PRO_CPN_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-CPN' THEN Total END)    AS PRO_CPN_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-GBV' THEN Coverage END) AS PRO_GBV_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-GBV' THEN Rank END)     AS PRO_GBV_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-GBV' THEN Total END)    AS PRO_GBV_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-MIN' THEN Coverage END) AS PRO_MIN_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-MIN' THEN Rank END)     AS PRO_MIN_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-MIN' THEN Total END)    AS PRO_MIN_Total,\n",
+        "\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-HLP' THEN Coverage END) AS PRO_HLP_Coverage,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-HLP' THEN Rank END)     AS PRO_HLP_Rank,\n",
+        "    MAX(CASE WHEN Cluster = 'PRO-HLP' THEN Total END)    AS PRO_HLP_Total\n",
+        "\n",
+        "FROM CSE2\n",
+        "GROUP BY `Country ISO3`, Country\n",
+        "ORDER BY Country)\n",
+        "SELECT \n",
+        "Country\n",
+        ",CASE WHEN ALL_Rank IS NOT NULL THEN ALL_Coverage  END AS `Total`\n",
+        ",CASE WHEN ALL_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(ALL_Rank AS STRING),\"/\",CAST(ALL_Total AS STRING),\")\")  END AS `Total Rank`\n",
+        "\n",
+        ",CASE WHEN EDU_Rank IS NOT NULL THEN EDU_Coverage  END AS `Education`\n",
+        ",CASE WHEN EDU_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(EDU_Rank AS STRING),\"/\",CAST(EDU_Total AS STRING),\")\")  END AS `Education Rank`\n",
+        "\n",
+        ",CASE WHEN FSC_Rank IS NOT NULL THEN FSC_Coverage  END AS `Food, Security and Agriculture`\n",
+        ",CASE WHEN FSC_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(FSC_Rank AS STRING),\"/\",CAST(FSC_Total AS STRING),\")\")  END AS `Food, Security and Agriculture Rank`\n",
+        "\n",
+        ",CASE WHEN HEA_Rank IS NOT NULL THEN HEA_Coverage  END AS `Health`\n",
+        ",CASE WHEN HEA_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(HEA_Rank AS STRING),\"/\",CAST(HEA_Total AS STRING),\")\")  END AS `Health Rank`\n",
+        "\n",
+        ",CASE WHEN MPC_Rank IS NOT NULL THEN MPC_Coverage  END AS `Multipurpose Cash`\n",
+        ",CASE WHEN MPC_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(MPC_Rank AS STRING),\"/\",CAST(MPC_Total AS STRING),\")\")  END AS `Multipurpose Cash Rank`\n",
+        "\n",
+        ",CASE WHEN NUT_Rank IS NOT NULL THEN NUT_Coverage  END AS `Nutrition`\n",
+        ",CASE WHEN NUT_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(NUT_Rank AS STRING),\"/\",CAST(NUT_Total AS STRING),\")\")  END AS `Nutrition Rank`\n",
+        "\n",
+        ",CASE WHEN PRO_Rank IS NOT NULL THEN PRO_Coverage  END AS `Protection (overall)`\n",
+        ",CASE WHEN PRO_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(PRO_Rank AS STRING),\"/\",CAST(PRO_Total AS STRING),\")\")  END AS `Protection (overall) Rank`\n",
+        "\n",
+        ",CASE WHEN SHL_Rank IS NOT NULL THEN SHL_Coverage  END AS `Emergency, Shelter and NFI`\n",
+        ",CASE WHEN SHL_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(SHL_Rank AS STRING),\"/\",CAST(SHL_Total AS STRING),\")\")  END AS `Emergency, Shelter and NFI Rank`\n",
+        "\n",
+        ",CASE WHEN WSH_Rank IS NOT NULL THEN WSH_Coverage  END AS `Water, Sanitation and Hygiene`\n",
+        ",CASE WHEN WSH_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(WSH_Rank AS STRING),\"/\",CAST(WSH_Total AS STRING),\")\")  END AS `Water, Sanitation and Hygiene Rank`\n",
+        "\n",
+        ",CASE WHEN CCM_Rank IS NOT NULL THEN CCM_Coverage  END AS `Camp Coordination and Camp Management`\n",
+        ",CASE WHEN CCM_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(CCM_Rank AS STRING),\"/\",CAST(CCM_Total AS STRING),\")\")  END AS `Camp Coordination and Camp Management Rank`\n",
+        "\n",
+        ",CASE WHEN MS_Rank IS NOT NULL THEN MS_Coverage  END AS `Refugee Response`\n",
+        ",CASE WHEN MS_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(MS_Rank AS STRING),\"/\",CAST(MS_Total AS STRING),\")\")  END AS `Refugee Response Rank`\n",
+        "\n",
+        ",CASE WHEN PRO_CPN_Rank IS NOT NULL THEN PRO_CPN_Coverage  END AS `Child Protection`\n",
+        ",CASE WHEN PRO_CPN_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(PRO_CPN_Rank AS STRING),\"/\",CAST(PRO_CPN_Total AS STRING),\")\")  END AS `Child Protection Rank`\n",
+        "\n",
+        ",CASE WHEN PRO_GBV_Rank IS NOT NULL THEN PRO_GBV_Coverage  END AS `Gender-Based Violence (GBV)`\n",
+        ",CASE WHEN PRO_GBV_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(PRO_GBV_Rank AS STRING),\"/\",CAST(PRO_GBV_Total AS STRING),\")\")  END AS `Gender-Based Violence (GBV) Rank`\n",
+        "\n",
+        ",CASE WHEN PRO_MIN_Rank IS NOT NULL THEN PRO_MIN_Coverage  END AS `Anti-mine Struggle`\n",
+        ",CASE WHEN PRO_MIN_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(PRO_MIN_Rank AS STRING),\"/\",CAST(PRO_MIN_Total AS STRING),\")\")  END AS `Anti-mine Struggle Rank`\n",
+        "\n",
+        ",CASE WHEN PRO_HLP_Rank IS NOT NULL THEN PRO_HLP_Coverage  END AS `Housing, Land and Property`\n",
+        ",CASE WHEN PRO_HLP_Rank IS NOT NULL THEN CONCAT(\"(\",CAST(PRO_HLP_Rank AS STRING),\"/\",CAST(PRO_HLP_Total AS STRING),\")\")  END AS `Housing, Land and Property Rank`\n",
+        "-- ,CASE WHEN ALL_Rank IS NOT NULL THEN CONCAT(ALL_Coverage,\" (\",CAST(ALL_Rank AS STRING),\"/\",CAST(ALL_Total AS STRING),\")\")  END AS `Total Coverage`\n",
+        "-- ,CASE WHEN EDU_Rank IS NOT NULL THEN CONCAT(EDU_Coverage,\" (\",CAST(EDU_Rank AS STRING),\"/\",CAST(EDU_Total AS STRING),\")\")  END AS Education\n",
+        "-- ,CASE WHEN FSC_Rank IS NOT NULL THEN CONCAT(FSC_Coverage,\" (\",CAST(FSC_Rank AS STRING),\"/\",CAST(FSC_Total AS STRING),\")\")  END AS `Food, Security and Agriculture`\n",
+        "-- ,CASE WHEN HEA_Rank IS NOT NULL THEN CONCAT(HEA_Coverage,\" (\",CAST(HEA_Rank AS STRING),\"/\",CAST(HEA_Total AS STRING),\")\")  END AS Health\n",
+        "-- ,CASE WHEN MPC_Rank IS NOT NULL THEN CONCAT(MPC_Coverage,\" (\",CAST(MPC_Rank AS STRING),\"/\",CAST(MPC_Total AS STRING),\")\")  END AS `Multipurpose Cash`\n",
+        "-- ,CASE WHEN NUT_Rank IS NOT NULL THEN CONCAT(NUT_Coverage,\" (\",CAST(NUT_Rank AS STRING),\"/\",CAST(NUT_Total AS STRING),\")\")  END AS Nutrition\n",
+        "-- ,CASE WHEN PRO_Rank IS NOT NULL THEN CONCAT(PRO_Coverage,\" (\",CAST(PRO_Rank AS STRING),\"/\",CAST(PRO_Total AS STRING),\")\")  END AS `Protection (overall)`\n",
+        "-- ,CASE WHEN SHL_Rank IS NOT NULL THEN CONCAT(SHL_Coverage,\" (\",CAST(SHL_Rank AS STRING),\"/\",CAST(SHL_Total AS STRING),\")\")  END AS `Emergency, Shelter and NFI`\n",
+        "-- ,CASE WHEN WSH_Rank IS NOT NULL THEN CONCAT(WSH_Coverage,\" (\",CAST(WSH_Rank AS STRING),\"/\",CAST(WSH_Total AS STRING),\")\")  END AS `Water, Sanitation and Hygiene`\n",
+        "-- ,CASE WHEN CCM_Rank IS NOT NULL THEN CONCAT(CCM_Coverage,\" (\",CAST(CCM_Rank AS STRING),\"/\",CAST(CCM_Total AS STRING),\")\")  END AS `Camp Coordination and Camp Management`\n",
+        "-- ,CASE WHEN MS_Rank IS NOT NULL THEN CONCAT(MS_Coverage,\" (\",CAST(MS_Rank AS STRING),\"/\",CAST(MS_Total AS STRING),\")\")  END AS `Refugee Response`\n",
+        "-- ,CASE WHEN PRO_CPN_Rank IS NOT NULL THEN CONCAT(PRO_CPN_Coverage,\" (\",CAST(PRO_CPN_Rank AS STRING),\"/\",CAST(PRO_CPN_Total AS STRING),\")\")  END AS `Child Protection`\n",
+        "-- ,CASE WHEN PRO_GBV_Rank IS NOT NULL THEN CONCAT(PRO_GBV_Coverage,\" (\",CAST(PRO_GBV_Rank AS STRING),\"/\",CAST(PRO_GBV_Total AS STRING),\")\")  END AS `Gender-Based Violence (GBV)`\n",
+        "-- ,CASE WHEN PRO_MIN_Rank IS NOT NULL THEN CONCAT(PRO_MIN_Coverage,\" (\",CAST(PRO_MIN_Rank AS STRING),\"/\",CAST(PRO_MIN_Total AS STRING),\")\")  END AS `Anti-mine Struggle`\n",
+        "-- ,CASE WHEN PRO_HLP_Rank IS NOT NULL THEN CONCAT(PRO_HLP_Coverage,\" (\",CAST(PRO_HLP_Rank AS STRING),\"/\",CAST(PRO_HLP_Total AS STRING),\")\")  END AS `Housing, Land and Property`\n",
+        "FROM CSE3\n",
+        "ORDER BY all_coverage DESC\n",
+        "\n"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "582e6a8f",
+      "displayName": "Rank Dashboard",
+      "layout": [
+        {
+          "widget": {
+            "name": "e35dfbb3",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "ac7847b3",
+                  "fields": [
+                    {
+                      "name": "Country",
+                      "expression": "`Country`"
+                    },
+                    {
+                      "name": "Description",
+                      "expression": "`Description`"
+                    },
+                    {
+                      "name": "Targeted",
+                      "expression": "`Targeted`"
+                    },
+                    {
+                      "name": "In Need",
+                      "expression": "`In Need`"
+                    },
+                    {
+                      "name": "Coverage",
+                      "expression": "`Coverage`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "Country"
+                  },
+                  {
+                    "fieldName": "Description"
+                  },
+                  {
+                    "fieldName": "Targeted",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    }
+                  },
+                  {
+                    "fieldName": "In Need",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    }
+                  },
+                  {
+                    "fieldName": "Coverage",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    }
+                  }
+                ]
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "light": "#F5FFFF"
+              },
+              "widgetBorderColor": {
+                "light": "#1F1E58"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 4,
+            "width": 12,
+            "height": 5
+          }
+        },
+        {
+          "widget": {
+            "name": "acbc3c78",
+            "queries": [
+              {
+                "name": "dashboards/01f13b1bc30811efb40fcded4f6105b6/datasets/01f13b1bd6be119a805a26853db19e1e_Description",
+                "query": {
+                  "datasetName": "ac7847b3",
+                  "fields": [
+                    {
+                      "name": "Description",
+                      "expression": "`Description`"
+                    },
+                    {
+                      "name": "Description_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true,
+                "title": "",
+                "showDescription": false
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "Description",
+                    "queryName": "dashboards/01f13b1bc30811efb40fcded4f6105b6/datasets/01f13b1bd6be119a805a26853db19e1e_Description"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 3,
+            "width": 4,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "89b8549a",
+            "queries": [
+              {
+                "name": "dashboards/01f13b1bc30811efb40fcded4f6105b6/datasets/01f13b1bd6be119a805a26853db19e1e_Country",
+                "query": {
+                  "datasetName": "ac7847b3",
+                  "fields": [
+                    {
+                      "name": "Country",
+                      "expression": "`Country`"
+                    },
+                    {
+                      "name": "Country_associativity",
+                      "expression": "COUNT_IF(`associative_filter_predicate_group`)"
+                    }
+                  ],
+                  "disaggregated": false
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": true
+              },
+              "widgetType": "filter-single-select",
+              "encodings": {
+                "fields": [
+                  {
+                    "fieldName": "Country",
+                    "queryName": "dashboards/01f13b1bc30811efb40fcded4f6105b6/datasets/01f13b1bd6be119a805a26853db19e1e_Country"
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 3,
+            "width": 4,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "aeee3b5f",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "99adca61",
+                  "fields": [
+                    {
+                      "name": "Country",
+                      "expression": "`Country`"
+                    },
+                    {
+                      "name": "Total Coverage",
+                      "expression": "`Total Coverage`"
+                    },
+                    {
+                      "name": "Total Coverage Rank",
+                      "expression": "`Total Coverage Rank`"
+                    },
+                    {
+                      "name": "Water, Sanitation and Hygiene",
+                      "expression": "`Water, Sanitation and Hygiene`"
+                    },
+                    {
+                      "name": "Water, Sanitation and Hygiene Rank",
+                      "expression": "`Water, Sanitation and Hygiene Rank`"
+                    },
+                    {
+                      "name": "Refugee Response",
+                      "expression": "`Refugee Response`"
+                    },
+                    {
+                      "name": "Refugee Response Rank",
+                      "expression": "`Refugee Response Rank`"
+                    },
+                    {
+                      "name": "Protection (overall)",
+                      "expression": "`Protection (overall)`"
+                    },
+                    {
+                      "name": "Protection (overall) Rank",
+                      "expression": "`Protection (overall) Rank`"
+                    },
+                    {
+                      "name": "Nutrition",
+                      "expression": "`Nutrition`"
+                    },
+                    {
+                      "name": "Nutrition Rank",
+                      "expression": "`Nutrition Rank`"
+                    },
+                    {
+                      "name": "Multipurpose Cash",
+                      "expression": "`Multipurpose Cash`"
+                    },
+                    {
+                      "name": "Multipurpose Cash Rank",
+                      "expression": "`Multipurpose Cash Rank`"
+                    },
+                    {
+                      "name": "Housing, Land and Property",
+                      "expression": "`Housing, Land and Property`"
+                    },
+                    {
+                      "name": "Housing, Land and Property Rank",
+                      "expression": "`Housing, Land and Property Rank`"
+                    },
+                    {
+                      "name": "Health",
+                      "expression": "`Health`"
+                    },
+                    {
+                      "name": "Health Rank",
+                      "expression": "`Health Rank`"
+                    },
+                    {
+                      "name": "Gender-Based Violence (GBV)",
+                      "expression": "`Gender-Based Violence (GBV)`"
+                    },
+                    {
+                      "name": "Gender-Based Violence (GBV) Rank",
+                      "expression": "`Gender-Based Violence (GBV) Rank`"
+                    },
+                    {
+                      "name": "Food, Security and Agriculture",
+                      "expression": "`Food, Security and Agriculture`"
+                    },
+                    {
+                      "name": "Food, Security and Agriculture Rank",
+                      "expression": "`Food, Security and Agriculture Rank`"
+                    },
+                    {
+                      "name": "Emergency, Shelter and NFI",
+                      "expression": "`Emergency, Shelter and NFI`"
+                    },
+                    {
+                      "name": "Emergency, Shelter and NFI Rank",
+                      "expression": "`Emergency, Shelter and NFI Rank`"
+                    },
+                    {
+                      "name": "Education",
+                      "expression": "`Education`"
+                    },
+                    {
+                      "name": "Education Rank",
+                      "expression": "`Education Rank`"
+                    },
+                    {
+                      "name": "Child Protection",
+                      "expression": "`Child Protection`"
+                    },
+                    {
+                      "name": "Child Protection Rank",
+                      "expression": "`Child Protection Rank`"
+                    },
+                    {
+                      "name": "Camp Coordination and Camp Management",
+                      "expression": "`Camp Coordination and Camp Management`"
+                    },
+                    {
+                      "name": "Camp Coordination and Camp Management Rank",
+                      "expression": "`Camp Coordination and Camp Management Rank`"
+                    },
+                    {
+                      "name": "Anti-mine Struggle",
+                      "expression": "`Anti-mine Struggle`"
+                    },
+                    {
+                      "name": "Anti-mine Struggle Rank",
+                      "expression": "`Anti-mine Struggle Rank`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showTitle": false,
+                "showDescription": true,
+                "description": "1: lowest coverage, 20: highest coverage"
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "Country"
+                  },
+                  {
+                    "fieldName": "Total Coverage",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "contentAlignment": "center"
+                  },
+                  {
+                    "fieldName": "Total Coverage Rank",
+                    "displayName": " "
+                  },
+                  {
+                    "fieldName": "Water, Sanitation and Hygiene",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "contentAlignment": "center",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Water, Sanitation and Hygiene Rank",
+                    "displayName": " "
+                  },
+                  {
+                    "fieldName": "Refugee Response",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "formatTemplate": "{{ @formatted }}",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Refugee Response Rank"
+                  },
+                  {
+                    "fieldName": "Protection (overall)",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Protection (overall) Rank",
+                    "displayName": " "
+                  },
+                  {
+                    "fieldName": "Nutrition",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Nutrition Rank"
+                  },
+                  {
+                    "fieldName": "Multipurpose Cash",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "contentAlignment": "center",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Multipurpose Cash Rank",
+                    "displayName": " "
+                  },
+                  {
+                    "fieldName": "Housing, Land and Property",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "contentAlignment": "center",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Housing, Land and Property Rank",
+                    "displayName": " "
+                  },
+                  {
+                    "fieldName": "Health",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Health Rank",
+                    "displayName": " "
+                  },
+                  {
+                    "fieldName": "Gender-Based Violence (GBV)",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Gender-Based Violence (GBV) Rank",
+                    "displayName": " "
+                  },
+                  {
+                    "fieldName": "Food, Security and Agriculture",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Food, Security and Agriculture Rank",
+                    "displayName": " "
+                  },
+                  {
+                    "fieldName": "Emergency, Shelter and NFI",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "contentAlignment": "center",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Emergency, Shelter and NFI Rank",
+                    "displayName": " "
+                  },
+                  {
+                    "fieldName": "Education",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "contentAlignment": "center",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Education Rank",
+                    "displayName": " "
+                  },
+                  {
+                    "fieldName": "Child Protection",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Child Protection Rank",
+                    "displayName": " "
+                  },
+                  {
+                    "fieldName": "Camp Coordination and Camp Management",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "significantFigures": {
+                        "type": "all"
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "contentAlignment": "center",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Camp Coordination and Camp Management Rank",
+                    "displayName": " "
+                  },
+                  {
+                    "fieldName": "Anti-mine Struggle",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-percent",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": true
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Anti-mine Struggle Rank",
+                    "displayName": " "
+                  }
+                ]
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "light": "#F5FFFF"
+              },
+              "widgetBorderColor": {
+                "light": "#1F1E58"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "a330db46",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "31061818",
+                  "fields": [
+                    {
+                      "name": "Country",
+                      "expression": "`Country`"
+                    },
+                    {
+                      "name": "Total",
+                      "expression": "`Total`"
+                    },
+                    {
+                      "name": "Total Rank",
+                      "expression": "`Total Rank`"
+                    },
+                    {
+                      "name": "Water, Sanitation and Hygiene",
+                      "expression": "`Water, Sanitation and Hygiene`"
+                    },
+                    {
+                      "name": "Water, Sanitation and Hygiene Rank",
+                      "expression": "`Water, Sanitation and Hygiene Rank`"
+                    },
+                    {
+                      "name": "Refugee Response",
+                      "expression": "`Refugee Response`"
+                    },
+                    {
+                      "name": "Refugee Response Rank",
+                      "expression": "`Refugee Response Rank`"
+                    },
+                    {
+                      "name": "Protection (overall)",
+                      "expression": "`Protection (overall)`"
+                    },
+                    {
+                      "name": "Protection (overall) Rank",
+                      "expression": "`Protection (overall) Rank`"
+                    },
+                    {
+                      "name": "Nutrition",
+                      "expression": "`Nutrition`"
+                    },
+                    {
+                      "name": "Nutrition Rank",
+                      "expression": "`Nutrition Rank`"
+                    },
+                    {
+                      "name": "Multipurpose Cash",
+                      "expression": "`Multipurpose Cash`"
+                    },
+                    {
+                      "name": "Multipurpose Cash Rank",
+                      "expression": "`Multipurpose Cash Rank`"
+                    },
+                    {
+                      "name": "Housing, Land and Property",
+                      "expression": "`Housing, Land and Property`"
+                    },
+                    {
+                      "name": "Housing, Land and Property Rank",
+                      "expression": "`Housing, Land and Property Rank`"
+                    },
+                    {
+                      "name": "Health",
+                      "expression": "`Health`"
+                    },
+                    {
+                      "name": "Health Rank",
+                      "expression": "`Health Rank`"
+                    },
+                    {
+                      "name": "Gender-Based Violence (GBV)",
+                      "expression": "`Gender-Based Violence (GBV)`"
+                    },
+                    {
+                      "name": "Gender-Based Violence (GBV) Rank",
+                      "expression": "`Gender-Based Violence (GBV) Rank`"
+                    },
+                    {
+                      "name": "Food, Security and Agriculture",
+                      "expression": "`Food, Security and Agriculture`"
+                    },
+                    {
+                      "name": "Food, Security and Agriculture Rank",
+                      "expression": "`Food, Security and Agriculture Rank`"
+                    },
+                    {
+                      "name": "Emergency, Shelter and NFI",
+                      "expression": "`Emergency, Shelter and NFI`"
+                    },
+                    {
+                      "name": "Emergency, Shelter and NFI Rank",
+                      "expression": "`Emergency, Shelter and NFI Rank`"
+                    },
+                    {
+                      "name": "Education",
+                      "expression": "`Education`"
+                    },
+                    {
+                      "name": "Education Rank",
+                      "expression": "`Education Rank`"
+                    },
+                    {
+                      "name": "Child Protection",
+                      "expression": "`Child Protection`"
+                    },
+                    {
+                      "name": "Child Protection Rank",
+                      "expression": "`Child Protection Rank`"
+                    },
+                    {
+                      "name": "Camp Coordination and Camp Management",
+                      "expression": "`Camp Coordination and Camp Management`"
+                    },
+                    {
+                      "name": "Camp Coordination and Camp Management Rank",
+                      "expression": "`Camp Coordination and Camp Management Rank`"
+                    },
+                    {
+                      "name": "Anti-mine Struggle",
+                      "expression": "`Anti-mine Struggle`"
+                    },
+                    {
+                      "name": "Anti-mine Struggle Rank",
+                      "expression": "`Anti-mine Struggle Rank`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "frame": {
+                "showDescription": true,
+                "description": "1: highest number of people, 20: lowest number of people"
+              },
+              "widgetType": "table",
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "Country"
+                  },
+                  {
+                    "fieldName": "Total",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": "#00A972",
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Total Rank",
+                    "contentAlignment": "left",
+                    "displayName": " "
+                  },
+                  {
+                    "fieldName": "Water, Sanitation and Hygiene",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Water, Sanitation and Hygiene Rank",
+                    "displayName": " ",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Refugee Response",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "style": {
+                      "type": "basic",
+                      "foregroundColor": {
+                        "themeColorType": "fontColor"
+                      },
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Refugee Response Rank",
+                    "displayName": " ",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Protection (overall)",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Protection (overall) Rank",
+                    "displayName": " ",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Nutrition",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "formatTemplate": "{{ @formatted }}",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Nutrition Rank",
+                    "displayName": " ",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Multipurpose Cash",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Multipurpose Cash Rank",
+                    "displayName": " ",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Housing, Land and Property",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Housing, Land and Property Rank",
+                    "displayName": " ",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Health",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Health Rank",
+                    "displayName": " ",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Gender-Based Violence (GBV)",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Gender-Based Violence (GBV) Rank",
+                    "displayName": " ",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Food, Security and Agriculture",
+                    "contentAlignment": "center",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Food, Security and Agriculture Rank",
+                    "displayName": " ",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Emergency, Shelter and NFI",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Emergency, Shelter and NFI Rank",
+                    "displayName": " ",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Education",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false,
+                      "negativeSign": "standard"
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Education Rank",
+                    "displayName": " ",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Child Protection",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "contentAlignment": "center",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Child Protection Rank",
+                    "displayName": " ",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Camp Coordination and Camp Management",
+                    "contentAlignment": "center",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Camp Coordination and Camp Management Rank",
+                    "displayName": " ",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Anti-mine Struggle",
+                    "format": {
+                      "type": "number-plain",
+                      "abbreviation": "none",
+                      "decimalPlaces": {
+                        "type": "exact",
+                        "places": 0
+                      },
+                      "hideGroupSeparator": false
+                    },
+                    "contentAlignment": "center",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "fieldName": "Anti-mine Struggle Rank",
+                    "displayName": " ",
+                    "style": {
+                      "type": "basic",
+                      "rules": [
+                        {
+                          "condition": {
+                            "operator": "is null"
+                          },
+                          "backgroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          },
+                          "foregroundColor": {
+                            "themeColorType": "widgetBackgroundColor"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "specExtensions": {
+              "widgetBackgroundColor": {
+                "light": "#F5FFFF"
+              },
+              "widgetBorderColor": {
+                "light": "#1F1E58"
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 19,
+            "width": 12,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "2ea06976",
+            "multilineTextboxSpec": {
+              "lines": [
+                "# Dashboard - Ranking based on Global Humanitarian Programme Cycle "
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "7d19c659",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### Table of People Targeted by Aid for given Purpose, represented as a % of people In Need (Coverage)"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 12,
+            "height": 1
+          }
+        },
+        {
+          "widget": {
+            "name": "00c0992c",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### <span style=\"text-align:center;display:block;\"><span style=\"font-size:20px\">Countries Most In Need of Aid</span></span>\n",
+                "\n",
+                "#### <span style=\"text-align:center;display:block;\">based on proportion of people in need being targeted by aid</span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 9,
+            "width": 12,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "d5f0f688",
+            "multilineTextboxSpec": {
+              "lines": [
+                "### <span style=\"text-align:center;display:block;\"><span style=\"font-size:20px\">Countries Most In Need of Aid</span></span>\n",
+                "\n",
+                "#### <span style=\"text-align:center;display:block;\">based on remaining number of people in need of aid but not yet targeted</span>"
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 17,
+            "width": 12,
+            "height": 2
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS",
+      "layoutVersion": "GRID_V1"
+    }
+  ],
+  "uiSettings": {
+    "theme": {
+      "widgetHeaderAlignment": "ALIGNMENT_UNSPECIFIED"
+    },
+    "applyModeEnabled": false
+  }
+}
